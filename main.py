@@ -18,11 +18,16 @@ BLOCK_SIZE = 20
 game_window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption('Snake Game')
 
-# Snake class
+# Define directions
+UP = (0, -1)
+DOWN = (0, 1)
+LEFT = (-1, 0)
+RIGHT = (1, 0)
+
 class Snake:
     def __init__(self):
         self.length = 1
-        self.positions = [(WINDOW_WIDTH//2, WINDOW_HEIGHT//2)]
+        self.positions = [(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)]
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
         self.color = GREEN
         self.score = 0
@@ -40,7 +45,8 @@ class Snake:
         cur = self.get_head_position()
         x = cur[0] + self.direction[0] * BLOCK_SIZE
         y = cur[1] + self.direction[1] * BLOCK_SIZE
-        self.positions.insert(0, (x, y))
+        new_position = (x, y)
+        self.positions.insert(0, new_position)
         if len(self.positions) > self.length:
             self.positions.pop()
 
@@ -56,27 +62,27 @@ class Snake:
             head in self.positions[1:]
         )
 
-# Define directions
-UP = (0, -1)
-DOWN = (0, 1)
-LEFT = (-1, 0)
-RIGHT = (1, 0)
-
-def generate_food():
+def generate_food(snake_positions):
     while True:
-        position = (random.randint(0, (WINDOW_WIDTH-BLOCK_SIZE)//BLOCK_SIZE) * BLOCK_SIZE,
-                   random.randint(0, (WINDOW_HEIGHT-BLOCK_SIZE)//BLOCK_SIZE) * BLOCK_SIZE)
-        if position not in snake_instance.positions:
+        position = (random.randint(0, (WINDOW_WIDTH - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE,
+                    random.randint(0, (WINDOW_HEIGHT - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE)
+        if position not in snake_positions:
             return position
+
+def draw_objects(snake, food_position):
+    game_window.fill(BLACK)
+    for position in snake.positions:
+        pygame.draw.rect(game_window, GREEN, pygame.Rect(position[0], position[1], BLOCK_SIZE - 2, BLOCK_SIZE - 2))
+    pygame.draw.rect(game_window, RED, pygame.Rect(food_position[0], food_position[1], BLOCK_SIZE - 2, BLOCK_SIZE - 2))
+    pygame.display.flip()
 
 def quit_game():
     pygame.quit()
     sys.exit(0)
 
 def main_game():
-    global snake_instance
-    snake_instance = Snake()
-    food_position = generate_food()
+    snake = Snake()
+    food_position = generate_food(snake.positions)
     clock = pygame.time.Clock()
 
     while True:
@@ -85,37 +91,29 @@ def main_game():
                 quit_game()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    snake_instance.turn(UP)
+                    snake.turn(UP)
                 elif event.key == pygame.K_DOWN:
-                    snake_instance.turn(DOWN)
+                    snake.turn(DOWN)
                 elif event.key == pygame.K_LEFT:
-                    snake_instance.turn(LEFT)
+                    snake.turn(LEFT)
                 elif event.key == pygame.K_RIGHT:
-                    snake_instance.turn(RIGHT)
+                    snake.turn(RIGHT)
                 elif event.key == pygame.K_q:
                     quit_game()
 
-        snake_instance.move()
+        snake.move()
         
-        # Check if food is eaten
-        if snake_instance.get_head_position() == food_position:
-            snake_instance.eat_food()
-            food_position = generate_food()
+        if snake.get_head_position() == food_position:
+            snake.eat_food()
+            food_position = generate_food(snake.positions)
 
-        # Check collision
-        if snake_instance.check_collision():
+        if snake.check_collision():
             break
 
-        # Draw game screen
-        game_window.fill(BLACK)
-        for position in snake_instance.positions:
-            pygame.draw.rect(game_window, GREEN, pygame.Rect(position[0], position[1], BLOCK_SIZE-2, BLOCK_SIZE-2))
-        pygame.draw.rect(game_window, RED, pygame.Rect(food_position[0], food_position[1], BLOCK_SIZE-2, BLOCK_SIZE-2))
-        
-        pygame.display.flip()
-        clock.tick(10)  # Control game speed
+        draw_objects(snake, food_position)
+        clock.tick(10)
 
-    return snake_instance.score
+    return snake.score
 
 def show_start_screen():
     game_window.fill(BLACK)
@@ -123,8 +121,8 @@ def show_start_screen():
     title = font.render('Snake Game', True, WHITE)
     prompt = pygame.font.Font(None, 36).render('Press SPACE to start, Q to quit', True, WHITE)
     
-    game_window.blit(title, (WINDOW_WIDTH//2 - title.get_width()//2, WINDOW_HEIGHT//3))
-    game_window.blit(prompt, (WINDOW_WIDTH//2 - prompt.get_width()//2, WINDOW_HEIGHT//2))
+    game_window.blit(title, (WINDOW_WIDTH // 2 - title.get_width() // 2, WINDOW_HEIGHT // 3))
+    game_window.blit(prompt, (WINDOW_WIDTH // 2 - prompt.get_width() // 2, WINDOW_HEIGHT // 2))
     pygame.display.flip()
 
 def show_game_over(score):
@@ -134,9 +132,9 @@ def show_game_over(score):
     score_display = pygame.font.Font(None, 50).render(f'Score: {score}', True, WHITE)
     prompt = pygame.font.Font(None, 36).render('Press SPACE to restart, Q to quit', True, WHITE)
     
-    game_window.blit(title, (WINDOW_WIDTH//2 - title.get_width()//2, WINDOW_HEIGHT//3))
-    game_window.blit(score_display, (WINDOW_WIDTH//2 - score_display.get_width()//2, WINDOW_HEIGHT//2))
-    game_window.blit(prompt, (WINDOW_WIDTH//2 - prompt.get_width()//2, WINDOW_HEIGHT//1.5))
+    game_window.blit(title, (WINDOW_WIDTH // 2 - title.get_width() // 2, WINDOW_HEIGHT // 3))
+    game_window.blit(score_display, (WINDOW_WIDTH // 2 - score_display.get_width() // 2, WINDOW_HEIGHT // 2))
+    game_window.blit(prompt, (WINDOW_WIDTH // 2 - prompt.get_width() // 2, WINDOW_HEIGHT // 1.5))
     pygame.display.flip()
 
 if __name__ == '__main__':
@@ -156,7 +154,6 @@ if __name__ == '__main__':
         score = main_game()
         show_game_over(score)
         
-        # Wait for player to choose whether to restart
         waiting = True
         while waiting:
             for event in pygame.event.get():
